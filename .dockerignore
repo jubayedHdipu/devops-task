@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+terraform/
+k8s/
+observability/
+scripts/
+*.md
+*.log
+*.txt
