@@ -86,7 +86,7 @@ rotate_log_if_needed() {
 
 get_cpu_usage() {
   if [[ -r /proc/stat ]]; then
-    local cpu user nice system idle iowait irq softirq steal _
+    local user nice system idle iowait irq softirq steal _
     read -r _ user nice system idle iowait irq softirq steal _ < /proc/stat
     local total1=$((user + nice + system + idle + iowait + irq + softirq + steal))
     local idle1=$((idle + iowait))
