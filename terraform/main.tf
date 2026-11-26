@@ -6,6 +6,8 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_region" "current" {}
+
 data "aws_ami" "ubuntu_24_04" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
@@ -134,6 +136,18 @@ resource "aws_route_table_association" "private" {
 }
 
 # ------------------------------------------------------------------------------
+# CloudWatch Log Group (Centralized Container Log Retention)
+# ------------------------------------------------------------------------------
+resource "aws_cloudwatch_log_group" "app" {
+  name              = "/aws/ec2/${local.name_prefix}-app"
+  retention_in_days = 14
+
+  tags = {
+    Name = "${local.name_prefix}-logs"
+  }
+}
+
+# ------------------------------------------------------------------------------
 # Security Group (Least-Privilege Ingress & Controlled Egress)
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "app_host" {
@@ -187,7 +201,7 @@ resource "aws_security_group" "app_host" {
 }
 
 # ------------------------------------------------------------------------------
-# IAM Role & Instance Profile for EC2 (SSM Deployment + ECR Pull)
+# IAM Role & Instance Profile for EC2 (SSM + ECR ReadOnly + CloudWatch Logs)
 # ------------------------------------------------------------------------------
 resource "aws_iam_role" "ec2_role" {
   name = "${local.name_prefix}-ec2-role"
@@ -214,6 +228,26 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
 resource "aws_iam_role_policy_attachment" "ecr_readonly" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy" "cloudwatch_logs" {
+  name = "${local.name_prefix}-cw-logs-policy"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "${aws_cloudwatch_log_group.app.arn}:*"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
@@ -264,7 +298,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
 }
 
 # ------------------------------------------------------------------------------
-# EC2 Compute Instance (t3.micro with Docker pre-installed)
+# EC2 Compute Instance (Docker + CloudWatch Container Log Shipping)
 # ------------------------------------------------------------------------------
 resource "aws_instance" "app_host" {
   ami                         = data.aws_ami.ubuntu_24_04.id
@@ -311,6 +345,19 @@ resource "aws_instance" "app_host" {
               systemctl enable docker
               systemctl start docker
               usermod -aG docker ubuntu || true
+
+              docker run -d \
+                --name devops-task-app \
+                --restart unless-stopped \
+                -p ${var.app_port}:${var.app_port} \
+                -e PORT=${var.app_port} \
+                -e APP_ENV=${var.environment} \
+                -e LOG_LEVEL=info \
+                --log-driver=awslogs \
+                --log-opt awslogs-region=${data.aws_region.current.name} \
+                --log-opt awslogs-group=${aws_cloudwatch_log_group.app.name} \
+                --log-opt awslogs-stream=ec2-bootstrap \
+                ghcr.io/jubayedhdipu/devops-task:latest || true
               EOF
 
   tags = {

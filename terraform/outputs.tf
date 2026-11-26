@@ -37,3 +37,8 @@ output "app_health_url" {
   description = "Health check URL of the deployed web service"
   value       = "http://${aws_instance.app_host.public_ip}:${var.app_port}/health"
 }
+
+output "cloudwatch_log_group_name" {
+  description = "CloudWatch Log Group receiving application container logs"
+  value       = aws_cloudwatch_log_group.app.name
+}
