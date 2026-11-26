@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Zero-Downtime Container Deployment Script with Health Verification & Rollback
+# Canary container deploy script with health check verification and rollback
 # Usage: ./scripts/deploy.sh <image_uri> [container_name] [host_port] [container_port]
 
 IMAGE_URI="${1:?Usage: $0 <image_uri> [container_name] [host_port] [container_port]}"

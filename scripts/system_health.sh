@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Production Server Health Monitoring & Alerting Script
+# Host health check and alerting script
 # Exit codes: 0 = healthy, 1 = warning, 2 = critical
 
 CPU_WARN_THRESHOLD=90
@@ -193,7 +193,7 @@ else
   echo "$LOG_ENTRY"
 fi
 
-# Bonus: Send Slack/Discord notification if ALERT_WEBHOOK_URL is configured and status is non-healthy
+# Send Slack/Discord notification if ALERT_WEBHOOK_URL is configured and status is non-healthy
 if [[ "$EXIT_CODE" -gt 0 ]] && [[ -n "${ALERT_WEBHOOK_URL:-}" ]]; then
   if command -v curl >/dev/null 2>&1; then
     PAYLOAD="{\"text\":\"[${STATUS_LABEL^^}] ${HOSTNAME_STR}: ${WARN_TEXT}\",\"content\":\"[${STATUS_LABEL^^}] ${HOSTNAME_STR}: ${WARN_TEXT}\"}"

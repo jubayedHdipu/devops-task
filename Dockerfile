@@ -19,7 +19,7 @@ ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
 
 LABEL org.opencontainers.image.title="devops-task-app" \
-    org.opencontainers.image.description="Production-ready web service for DevOps assessment" \
+    org.opencontainers.image.description="Go HTTP service with Prometheus metrics and health endpoints" \
     org.opencontainers.image.version="${APP_VERSION}" \
     org.opencontainers.image.revision="${VCS_REF}" \
     org.opencontainers.image.created="${BUILD_DATE}" \
