@@ -25,6 +25,7 @@ LABEL org.opencontainers.image.title="devops-task-app" \
     org.opencontainers.image.created="${BUILD_DATE}" \
     org.opencontainers.image.source="https://github.com/jubayedHdipu/devops-task"
 
+# hadolint ignore=DL3018
 RUN apk --no-cache add ca-certificates && \
     addgroup -g 10001 -S appgroup && \
     adduser -u 10001 -S appuser -G appgroup
