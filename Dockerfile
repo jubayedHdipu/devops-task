@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM golang:1.23.4-alpine3.20 AS builder
+FROM golang:1.25.7-alpine3.23 AS builder
 
 WORKDIR /src
 
@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-s -w" \
     -o /out/server .
 
-FROM alpine:3.20.3
+FROM alpine:3.23.3
 
 ARG APP_VERSION=1.0.0
 ARG VCS_REF=unknown
