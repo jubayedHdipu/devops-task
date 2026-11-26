@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-s -w" \
     -o /out/server .
 
-FROM alpine:3.23.3
+FROM alpine:3.23.8
 
 ARG APP_VERSION=1.0.0
 ARG VCS_REF=unknown
