@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Production System Health Check Script
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/devops-task
+ExecStart=/opt/devops-task/scripts/system_health.sh --cpu 90 --mem 85 --disk 80 --log-file /var/log/devops-task/health_log.txt
+User=root
+StandardOutput=journal
+StandardError=journal
