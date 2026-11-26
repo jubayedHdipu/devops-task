@@ -21,7 +21,7 @@ jobs:
     outputs:
       sha_tag: ${{ steps.meta.outputs.sha_tag }}
       semver_tag: ${{ steps.meta.outputs.semver_tag }}
-      ghcr_image: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+      ghcr_image: ${{ steps.meta.outputs.ghcr_image }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,8 +31,10 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
           SEMVER="1.0.${{ github.run_number }}"
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "sha_tag=sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "semver_tag=${SEMVER}" >> "$GITHUB_OUTPUT"
+          echo "ghcr_image=ghcr.io/${OWNER_LOWER}/${{ env.IMAGE_NAME }}" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU for multi-arch builds
@@ -62,8 +64,9 @@ jobs:
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.meta.outputs.build_date }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.sha_tag }}
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.semver_tag }}
+            ${{ steps.meta.outputs.ghcr_image }}:${{ steps.meta.outputs.sha_tag }}
+            ${{ steps.meta.outputs.ghcr_image }}:${{ steps.meta.outputs.semver_tag }}
+            ${{ steps.meta.outputs.ghcr_image }}:latest
 
       - name: Configure AWS credentials via OIDC (if configured)
         if: ${{ vars.AWS_ROLE_ARN != '' }}

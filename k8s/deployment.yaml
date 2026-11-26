@@ -37,7 +37,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: app
-          image: ghcr.io/jubayedhdipu/devops-task:latest
+          image: ghcr.io/jubayedhdipu/devops-task-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

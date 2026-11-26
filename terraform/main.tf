@@ -347,7 +347,7 @@ resource "aws_instance" "app_host" {
               usermod -aG docker ubuntu || true
 
               docker run -d \
-                --name devops-task-app \
+                --name devops-app \
                 --restart unless-stopped \
                 -p ${var.app_port}:${var.app_port} \
                 -e PORT=${var.app_port} \
@@ -357,7 +357,7 @@ resource "aws_instance" "app_host" {
                 --log-opt awslogs-region=${data.aws_region.current.name} \
                 --log-opt awslogs-group=${aws_cloudwatch_log_group.app.name} \
                 --log-opt awslogs-stream=ec2-bootstrap \
-                ghcr.io/jubayedhdipu/devops-task:latest || true
+                ghcr.io/jubayedhdipu/devops-task-app:latest || true
               EOF
 
   tags = {

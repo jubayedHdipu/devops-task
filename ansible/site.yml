@@ -1,0 +1,134 @@
+---
+- name: Harden Ubuntu 24.04 application host and configure health monitoring
+  hosts: app_hosts
+  become: true
+
+  vars:
+    deploy_user: deploy
+    app_port: 8080
+    app_dir: /opt/devops-task
+    log_dir: /var/log/devops-task
+
+  tasks:
+    - name: Update apt cache and upgrade installed packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: safe
+        cache_valid_time: 3600
+
+    - name: Install security and operational packages
+      ansible.builtin.apt:
+        name:
+          - ufw
+          - fail2ban
+          - unattended-upgrades
+          - ca-certificates
+          - curl
+          - jq
+        state: present
+
+    - name: Create non-root deploy user in docker group
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        shell: /bin/bash
+        groups: docker
+        append: true
+        create_home: true
+
+    - name: Ensure application and log directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ app_dir }}/scripts/systemd", owner: root, group: root, mode: "0755" }
+        - { path: "{{ log_dir }}", owner: root, group: root, mode: "0750" }
+
+    - name: Harden SSH daemon configuration (disable root login and password auth)
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^{{ item.key }}"
+        line: "{{ item.key }} {{ item.value }}"
+        validate: "/usr/sbin/sshd -t -f %s"
+      loop:
+        - { key: "PermitRootLogin", value: "no" }
+        - { key: "PasswordAuthentication", value: "no" }
+        - { key: "PubkeyAuthentication", value: "yes" }
+        - { key: "X11Forwarding", value: "no" }
+      notify: Restart ssh
+
+    - name: Configure UFW default deny incoming policy
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Configure UFW default allow outgoing policy
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+
+    - name: Allow SSH, HTTP, HTTPS, and application ports through UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "22"
+        - "80"
+        - "443"
+        - "{{ app_port | string }}"
+
+    - name: Enable UFW firewall
+      community.general.ufw:
+        state: enabled
+
+    - name: Ensure fail2ban and unattended-upgrades services are enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - fail2ban
+        - unattended-upgrades
+
+    - name: Copy system health check script and systemd units
+      ansible.builtin.copy:
+        src: "../scripts/{{ item.src }}"
+        dest: "{{ app_dir }}/scripts/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      loop:
+        - { src: "system_health.sh", dest: "system_health.sh", mode: "0750" }
+        - { src: "systemd/system-health.service", dest: "systemd/system-health.service", mode: "0644" }
+        - { src: "systemd/system-health.timer", dest: "systemd/system-health.timer", mode: "0644" }
+
+    - name: Install systemd service and timer units
+      ansible.builtin.copy:
+        src: "{{ app_dir }}/scripts/systemd/{{ item }}"
+        dest: "/etc/systemd/system/{{ item }}"
+        remote_src: true
+        mode: "0644"
+      loop:
+        - system-health.service
+        - system-health.timer
+      notify: Reload systemd
+
+    - name: Enable and start 5-minute system health timer
+      ansible.builtin.systemd:
+        name: system-health.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Restart ssh
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true

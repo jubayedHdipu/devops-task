@@ -1,0 +1,8 @@
+[app_hosts]
+# Replace with EC2 public IP or SSM/Tailscale host and SSH user/key path
+# devops-prod ansible_host=203.0.113.10 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/devops-task.pem
+
+[app_hosts:vars]
+ansible_python_interpreter=/usr/bin/python3
+app_port=8080
+deploy_user=deploy

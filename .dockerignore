@@ -3,7 +3,9 @@
 .gitignore
 terraform/
 k8s/
-observability/
+helm/
+monitoring/
+ansible/
 scripts/
 *.md
 *.log
