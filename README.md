@@ -252,6 +252,46 @@ kubectl -n devops-task rollout undo deployment/devops-task-app
 kubectl -n devops-task rollout status deployment/devops-task-app
 ```
 
+Verified output on local Kubernetes (`docker-desktop v1.36.1`):
+
+```text
+$ kubectl -n devops-task get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+devops-task-app-7677b848bf-m4hg7   1/1     Running   0          7s
+devops-task-app-7677b848bf-qhknc   1/1     Running   0          7s
+
+$ curl -s http://127.0.0.1:18080/
+{"message":"Hello from DevOps Task!","status":"running","version":"1.0.0"}
+
+$ kubectl -n devops-task set image deployment/devops-task-app app=ghcr.io/jubayedhdipu/devops-task-app:1.0.1
+deployment.apps/devops-task-app image updated
+
+$ kubectl -n devops-task rollout status deployment/devops-task-app
+Waiting for deployment "devops-task-app" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "devops-task-app" rollout to finish: 1 old replicas are pending termination...
+deployment "devops-task-app" successfully rolled out
+
+$ curl -s http://127.0.0.1:18080/
+{"message":"Hello from DevOps Task!","status":"running","version":"1.0.1"}
+
+$ kubectl -n devops-task rollout history deployment/devops-task-app
+deployment.apps/devops-task-app
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+$ kubectl -n devops-task rollout undo deployment/devops-task-app
+deployment.apps/devops-task-app rolled back
+
+$ kubectl -n devops-task rollout status deployment/devops-task-app
+Waiting for deployment "devops-task-app" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "devops-task-app" rollout to finish: 1 old replicas are pending termination...
+deployment "devops-task-app" successfully rolled out
+
+$ curl -s http://127.0.0.1:18080/
+{"message":"Hello from DevOps Task!","status":"running","version":"1.0.0"}
+```
+
 ### Helm Chart (Staging & Production)
 
 ```bash
@@ -302,6 +342,20 @@ Defined in `monitoring/prometheus/alerts.yml` and routed to `monitoring/alertman
 | `node-exporter` | `/proc:/host/proc:ro`, `/sys:/host/sys:ro`, `/:/rootfs:ro`, `pid: host` | Reads host kernel CPU, memory, network interface, and disk stats rather than the container's isolated `/proc` and namespace. |
 | `cadvisor` | `/:/rootfs:ro`, `/var/run:ro`, `/sys:ro`, `/var/lib/docker:ro`, `privileged: true` | Inspects cgroups and Docker container layers/memory limits across all running containers on the host. |
 | `alloy` | `/var/run/docker.sock:ro` | Uses read-only Docker socket access for container discovery and streaming JSON stdout logs to Loki. |
+
+### Dashboard Screenshots
+
+#### Application Metrics & Logs (Prometheus + Loki)
+
+![Application Metrics and Logs](docs/screenshots/grafana-application.jpg)
+
+#### Host System Metrics (Node Exporter)
+
+![Host System Metrics](docs/screenshots/grafana-host.jpg)
+
+#### Container Resource Metrics (cAdvisor)
+
+![Container Resource Metrics](docs/screenshots/grafana-containers.jpg)
 
 ### Error-Spike Troubleshooting Walkthrough
 

@@ -6,6 +6,7 @@ k8s/
 helm/
 monitoring/
 ansible/
+docs/
 scripts/
 *.md
 *.log

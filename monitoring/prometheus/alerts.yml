@@ -42,11 +42,11 @@ groups:
 
       - alert: ContainerMemoryNearLimit
         expr: |
-          (
-            container_memory_working_set_bytes{name!=""}
-            /
-            container_spec_memory_limit_bytes{name!=""}
-          ) > 0.85
+            (
+              container_memory_working_set_bytes{name!=""}
+              /
+              (container_spec_memory_limit_bytes{name!=""} > 0)
+            ) > 0.85
         for: 2m
         labels:
           severity: warning
