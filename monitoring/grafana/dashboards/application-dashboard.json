@@ -1,0 +1,128 @@
+{
+    "uid": "devops-app-dash",
+    "title": "Application Metrics & Logs",
+    "tags": [
+        "devops-task",
+        "application"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "10s",
+    "panels": [
+        {
+            "id": 1,
+            "type": "timeseries",
+            "title": "HTTP Request Rate (req/s)",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(http_requests_total[1m])) by (method, path)",
+                    "legendFormat": "{{method}} {{path}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "timeseries",
+            "title": "HTTP Error Rate (5xx / 4xx)",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1m]))",
+                    "legendFormat": "5xx Errors/s",
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum(rate(http_requests_total{status=~\"4..\"}[1m]))",
+                    "legendFormat": "4xx Errors/s",
+                    "refId": "B"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Request Latency (p50 / p95 / p99)",
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p50",
+                    "refId": "A"
+                },
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p95",
+                    "refId": "B"
+                },
+                {
+                    "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+                    "legendFormat": "p99",
+                    "refId": "C"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "logs",
+            "title": "Live Application Logs (Loki - Correlated View)",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 8
+            },
+            "datasource": {
+                "type": "loki",
+                "uid": "loki"
+            },
+            "options": {
+                "showTime": true,
+                "showLabels": true,
+                "wrapLogMessage": true,
+                "enableLogDetails": true,
+                "dedupStrategy": "none"
+            },
+            "targets": [
+                {
+                    "expr": "{service=\"app\"}",
+                    "refId": "A"
+                }
+            ]
+        }
+    ]
+}

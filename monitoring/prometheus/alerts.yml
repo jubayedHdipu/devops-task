@@ -1,0 +1,55 @@
+groups:
+  - name: devops-task-alerts
+    rules:
+      - alert: AppInstanceDown
+        expr: up{job="devops-task-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application instance is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for more than 1 minute."
+
+      - alert: HighHttpErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total[5m])), 1)
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP 5xx error rate (> 5%)"
+          description: "More than 5% of HTTP requests returned 5xx errors over the last 5 minutes."
+
+      - alert: HostDiskUsageHigh
+        expr: |
+          (
+            1 - (
+              node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"}
+              /
+              node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs|vfat"}
+            )
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk usage above 80% on {{ $labels.mountpoint }}"
+          description: "Filesystem {{ $labels.mountpoint }} has exceeded 80% capacity for 5 minutes."
+
+      - alert: ContainerMemoryNearLimit
+        expr: |
+          (
+            container_memory_working_set_bytes{name!=""}
+            /
+            container_spec_memory_limit_bytes{name!=""}
+          ) > 0.85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} memory usage > 85% of limit"
+          description: "Container {{ $labels.name }} is approaching its configured memory limit."
