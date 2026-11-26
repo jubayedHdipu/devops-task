@@ -1,0 +1,23 @@
+replicaCount: 1
+
+image:
+  tag: "staging"
+  pullPolicy: Always
+
+ingress:
+  host: staging.devops-task.local
+
+env:
+  APP_ENV: "staging"
+  LOG_LEVEL: "debug"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
